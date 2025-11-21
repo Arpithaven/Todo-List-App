@@ -10,6 +10,9 @@ provider:
   runtime: nodejs14.x
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
+  tracing: 
+    lamda: true
+    apiGateway: true
   environment:
     TODOS_TABLE: Todos-${self:provider.stage}
     TODOS_CREATED_AT_INDEX: CreatedAtIndex
@@ -34,11 +37,11 @@ functions:
       - Effect: Allow
         Action: 
           - dynamodb:Query
-        Resource: aws:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.TODOS_TABLE}
+        Resource: aws:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.environment.TODOS_TABLE}
       - Effect: Allow
         Action:
           - dynamodb:Query
-        Resource: aws:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.TODOS_TABLE}/index/${self:provider.TODOS_CREATED_AT_INDEX}
+        Resource: aws:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.TODOS_CREATED_AT_INDEX}
 
   # TODO: Configure this function
   CreateTodo:
@@ -53,7 +56,7 @@ functions:
       - Effect: Allow
         Action: 
           - dynamodb:PutItem
-        Resource: aws:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.TODOS_TABLE}
+        Resource: aws:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.environment.TODOS_TABLE}
 
   # TODO: Configure this function
   UpdateTodo:
@@ -69,7 +72,7 @@ functions:
         Action:
           - dynamodb:UpdateItem
           - dynamodb:Query
-        Resource: aws:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.TODOS_TABLE}
+        Resource: aws:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.environment.TODOS_TABLE}
 
   # TODO: Configure this function
   DeleteTodo:
@@ -85,7 +88,7 @@ functions:
         Action: 
           - dynamodb:DeleteItem
           - dynamodb:Query
-        Resource: aws:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.TODOS_TABLE}
+        Resource: aws:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.environment.TODOS_TABLE}
 
   # TODO: Configure this function
   GenerateUploadUrl:
@@ -105,7 +108,7 @@ functions:
         Action: 
           - dynamodb:UpdateItem
           - dynamodb:Query
-        Resource: aws:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.TODOS_TABLE}
+        Resource: aws:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.environment.TODOS_TABLE}
 
 resources:
   Resources:

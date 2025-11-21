@@ -58,7 +58,9 @@ async function verifyToken(authHeader) {
     if (!signingKey) {
       throw new Error('jwks endpoint didnt have keys')
     }
-    const cert = ``
+    const cert = `-----BEGIN CERTIFICATE-----\n${signingKey.x5c[0]}\n-----END CERTIFICATE-----`
+
+    return jsonwebtoken.verify(token, cert, { algorithms: ['RS256'] })
   } catch (error) {
     logger.error('Token Verification error', error)
     throw error
