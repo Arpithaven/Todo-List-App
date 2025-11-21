@@ -11,7 +11,7 @@ export class AttachmentUtils{
     )
     {
         this.bucketName = bucketName
-        this.urlExpiration = urlExpiration
+        this.urlExpiration = parseInt(urlExpiration)
     }
 
     getAttachmentUrl(todoId){
