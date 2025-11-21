@@ -11,7 +11,7 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
   tracing: 
-    lamda: true
+    lambda: true
     apiGateway: true
   environment:
     TODOS_TABLE: Todos-${self:provider.stage}
@@ -37,11 +37,11 @@ functions:
       - Effect: Allow
         Action: 
           - dynamodb:Query
-        Resource: aws:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.environment.TODOS_TABLE}
+        Resource: arn:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.environment.TODOS_TABLE}
       - Effect: Allow
         Action:
           - dynamodb:Query
-        Resource: aws:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.TODOS_CREATED_AT_INDEX}
+        Resource: arn:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.TODOS_CREATED_AT_INDEX}
 
   # TODO: Configure this function
   CreateTodo:
@@ -56,7 +56,7 @@ functions:
       - Effect: Allow
         Action: 
           - dynamodb:PutItem
-        Resource: aws:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.environment.TODOS_TABLE}
+        Resource: arn:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.environment.TODOS_TABLE}
 
   # TODO: Configure this function
   UpdateTodo:
@@ -72,7 +72,7 @@ functions:
         Action:
           - dynamodb:UpdateItem
           - dynamodb:Query
-        Resource: aws:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.environment.TODOS_TABLE}
+        Resource: arn:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.environment.TODOS_TABLE}
 
   # TODO: Configure this function
   DeleteTodo:
@@ -88,7 +88,7 @@ functions:
         Action: 
           - dynamodb:DeleteItem
           - dynamodb:Query
-        Resource: aws:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.environment.TODOS_TABLE}
+        Resource: arn:aws:dynamodb:${self:provider.stage}:*:table/${self:provider.environment.TODOS_TABLE}
 
   # TODO: Configure this function
   GenerateUploadUrl:
@@ -121,7 +121,6 @@ resources:
           gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
           gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS,POST'"
         ResponseType: DEFAULT_4XX
-        ResponseType: DEFAULT_4XX
         RestApiId:
           Ref: ApiGatewayRestApi
 
@@ -142,7 +141,7 @@ resources:
           - AttributeName: todoId
             KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
-        TableName:${self:provider.environment.TODOS_TABLE}
+        TableName: ${self:provider.environment.TODOS_TABLE}
         LocalSecondaryIndexes:
           - IndexName: ${self:provider.environment.TODOS_CREATED_AT_INDEX}
             KeySchema:
@@ -161,8 +160,6 @@ resources:
           CorsRules:
             - AllowedOrigins:
               - '*'
-              AllowedOrigins:
-              - '*'
               AllowedMethods:
               - GET
               - PUT
@@ -176,13 +173,13 @@ resources:
       Properties:
         PolicyDocument:
           Id: MyBucketPol
-          Version: "2025-11-21"
+          Version: "2012-10-17"
           Statement:
             - Sid: PublicReadForGetBucketObjects
               Effect: Allow
               Principal: '*'
               Action: 's3:GetObject'
-              Resource: 'arn:aws:s3:::${self:provider.ATTACHMENT_S3_BUCKET}/*'
+              Resource: 'arn:aws:s3:::${self:provider.environment.ATTACHMENT_S3_BUCKET}/*'
         Bucket: !Ref AttachmentsBucket
 
       
