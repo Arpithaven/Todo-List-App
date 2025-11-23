@@ -3,8 +3,9 @@ import jsonwebtoken from 'jsonwebtoken'
 import { createLogger } from '../../utils/logger.mjs'
 
 const logger = createLogger('auth')
+const auth0Domain = process.env.AUTH0_DOMAIN // Your Auth0 domain
 
-const jwksUrl = 'https://dev-l2xgk0aapt8hhevq.us.auth0.com/.well-known/jwks.json'
+const jwksUrl = `https://${auth0Domain}/.well-known/jwks.json`
 
 export async function handler(event) {
   try {

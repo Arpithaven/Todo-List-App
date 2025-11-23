@@ -18,6 +18,7 @@ provider:
     TODOS_CREATED_AT_INDEX: CreatedAtIndex
     ATTACHMENT_S3_BUCKET: ayushserverless-112233-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 3000
+    AUTH0_DOMAIN: ENTER_YOUR_AUTH0_DOMAIN_HERE # Replace with your Auth0 domain
 
 functions:
 
