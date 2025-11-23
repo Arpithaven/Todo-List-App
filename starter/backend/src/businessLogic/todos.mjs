@@ -22,7 +22,7 @@ export async function createTodo(newTodo, userId){
         todoId,
         createdAt,
         done: false,
-        attachmentUrl: null,
+        // attachmentUrl: null, // removed to fix bug where fetching todos fails due to null attachment field (it expects string)
         ...newTodo
     }
 
