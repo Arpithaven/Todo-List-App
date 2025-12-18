@@ -1,217 +1,207 @@
-# Serverless TODO (Udacity Cloud Native Developer)
+# Serverless Todo App 📝🚀
 
-To implement this project you need to implement a simple TODO application using AWS Lambda and Serverless framework. Search for all the `TODO:` comments in the code to find the placeholders that you need to implement.
+A fully serverless Todo application built using **AWS Lambda, API Gateway, DynamoDB, S3**, and **Auth0** for authentication. This project follows the Udacity Cloud Developer Nanodegree requirements and demonstrates best practices for building secure, scalable serverless applications.
 
-# client env vars (starter/client/.env)
+---
 
-REACT_APP_AUTH0_DOMAIN=
+## 📌 Features
 
-REACT_APP_AUTH0_CLIENT_ID=
+- User authentication and authorization using **Auth0 (JWT + Custom Authorizer)**
+- CRUD operations for Todos
+- Per-user data isolation
+- Image upload support using **S3 pre-signed URLs**
+- Serverless backend with **AWS Lambda**
+- REST API with **API Gateway**
+- Persistent storage using **DynamoDB**
+- Observability using **CloudWatch Logs & X-Ray**
 
-REACT_APP_API_ENDPOINT=
+---
 
-# serverless backend env vars (starter/backend/serverless.yml)
-
-```
-provider:
-  environment:
-      TODOS_TABLE: Todos-${self:provider.stage}
-      TODOS_CREATED_AT_INDEX: CreatedAtIndex
-      ATTACHMENT_S3_BUCKET: ayushserverless-112233-${self:provider.stage} # You can change 'ayushserverless-112233-' to any unique bucket name prefix
-      SIGNED_URL_EXPIRATION: 3000
-      AUTH0_DOMAIN: ENTER_YOUR_AUTH0_DOMAIN_HERE # Replace with your Auth0 domain
-```
-
-# Functionality of the application
-
-This appliation will allow to create/remove/update/get TODO items. Each TODO item can optionally have an attachment image. Each user only has access to TODO items that he/she has created. 
-
-# Functions to be implemented
-
-To implement this project you need to implement the following functions and configure them in the `serverless.yml` file:
-
-* `Auth` - this function should implement a custom authorizer for API Gateway that should be added to all other functions.
-* `GetTodos` - should return all TODOs for a current user. 
-* `CreateTodo` - should create a new TODO for a current user. A shape of data send by a client application to this function can be found in the `CreateTodoRequest.ts` file
-* `UpdateTodo` - should update a TODO item created by a current user. A shape of data send by a client application to this function can be found in the `UpdateTodoRequest.ts` file
-* `DeleteTodo` - should delete a TODO item created by a current user. Expects an id of a TODO item to remove.
-* `GenerateUploadUrl` - returns a presigned url that can be used to upload an attachment file for a TODO item. 
-
-All functions are already connected to appriate events from API gateway
-
-An id of a user can be extracted from a JWT token passed by a client
-
-You also need to add any necessary resources to the `resources` section of the `serverless.yml` file such as DynamoDB table and and S3 bucket.
-
-# Frontend
-
-The `client` folder contains a web application that can use the API that should be developed in the project.
-
-To use it please edit the `config.ts` file in the `client` folder:
-
-```ts
-const apiId = '...' API Gateway id
-export const apiEndpoint = `https://${apiId}.execute-api.us-east-1.amazonaws.com/dev`
-
-export const authConfig = {
-  domain: '...',    // Domain from Auth0
-  clientId: '...',  // Client id from an Auth0 application
-  callbackUrl: 'http://localhost:3000/callback'
-}
-```
-
-
-# Suggestions
-
-To store TODO items you might want to use a DynamoDB table with local secondary index(es). A create a local secondary index you need to a create a DynamoDB resource like this:
-
-```yml
-
-TodosTable:
-  Type: AWS::DynamoDB::Table
-  Properties:
-    AttributeDefinitions:
-      - AttributeName: partitionKey
-        AttributeType: S
-      - AttributeName: sortKey
-        AttributeType: S
-      - AttributeName: indexKey
-        AttributeType: S
-    KeySchema:
-      - AttributeName: partitionKey
-        KeyType: HASH
-      - AttributeName: sortKey
-        KeyType: RANGE
-    BillingMode: PAY_PER_REQUEST
-    TableName: ${self:provider.environment.TODOS_TABLE}
-    LocalSecondaryIndexes:
-      - IndexName: ${self:provider.environment.INDEX_NAME}
-        KeySchema:
-          - AttributeName: partitionKey
-            KeyType: HASH
-          - AttributeName: indexKey
-            KeyType: RANGE
-        Projection:
-          ProjectionType: ALL # What attributes will be copied to an index
+## 🏗️ Architecture Overview
 
 ```
-
-To query an index you need to use the `query()` method like:
-
-```ts
-await this.dynamoDBClient
-  .query({
-    TableName: 'table-name',
-    IndexName: 'index-name',
-    KeyConditionExpression: 'paritionKey = :paritionKey',
-    ExpressionAttributeValues: {
-      ':paritionKey': partitionKeyValue
-    }
-  })
-  .promise()
+Client (React + Auth0)
+        |
+        v
+API Gateway (REST API)
+        |
+        v
+Custom Lambda Authorizer (Auth0 JWT validation)
+        |
+        v
+Lambda Functions (CRUD / Upload URL)
+        |
+        +--> DynamoDB (Todos Table)
+        +--> S3 (Attachments Bucket)
 ```
 
-# How to run the application
+---
 
-## Backend
+## 🛠️ Tech Stack
 
-To deploy an application run the following commands:
+### Backend
+- Node.js 18.x
+- AWS Lambda
+- Amazon API Gateway
+- Amazon DynamoDB
+- Amazon S3
+- Serverless Framework v3
+- Middy middleware
+
+### Authentication
+- Auth0
+- JWT (RS256)
+
+### Frontend (optional)
+- React
+- Axios
+
+---
+
+## 📂 Project Structure
 
 ```
-cd backend
-npm install
-sls deploy -v
+serverless-todo-app/
+├── src/
+│   ├── lambda/
+│   │   ├── auth/                # Auth0 Custom Authorizer
+│   │   └── http/                # API handlers
+│   ├── businessLogic/           # Core application logic
+│   └── utils/                   # Helpers (JWT, logging)
+├── models/                      # Request validation schemas
+├── serverless.yml
+├── package.json
+└── README.md
 ```
 
-## Frontend
+---
 
-To run a client application first edit the `client/src/config.ts` file to set correct parameters. And then run the following commands
+## 🔐 Authentication Flow
 
+1. User logs in via Auth0
+2. Frontend receives **Access Token (JWT)**
+3. Token is sent in API requests:
+   ```
+   Authorization: Bearer <access_token>
+   ```
+4. API Gateway invokes **Custom Lambda Authorizer**
+5. JWT is verified using Auth0 JWKS
+6. API access is granted or denied
+
+---
+
+## 🌐 API Endpoints
+
+Base URL:
 ```
-cd client
-npm install
-npm run start
-```
-
-This should start a development server with the React application that will interact with the serverless TODO application.
-
-# "curl" commands
-
-An alternative way to test your API you can use the following curl commands. For all examples below you would need to replace:
-
-* {API-ID} - with you API's ID that is returned by the Serverless framework
-* {JWT-token} - a JWT token from the web application
-
-## Get all TODOs
-
-To fetch all TODOs you would need to send the following GET request:
-
-```sh
-curl --location --request GET 'https://{API-ID}.execute-api.us-east-1.amazonaws.com/dev/todos' \
---header 'Authorization: Bearer {JWT-token}'
+https://<api-id>.execute-api.us-east-1.amazonaws.com/dev
 ```
 
-## Create a new TODO
+| Method | Endpoint | Description |
+|------|---------|-------------|
+| GET | /todos | Get all todos for user |
+| POST | /todos | Create a new todo |
+| PATCH | /todos/{todoId} | Update a todo |
+| DELETE | /todos/{todoId} | Delete a todo |
+| POST | /todos/{todoId}/attachment | Generate upload URL |
 
-To create a new TODO you would need to send a POST request and provide a JSON with two mandatory fields: `name` and `dueDate`.
+---
 
-```sh
-curl --location --request POST 'https://{API-ID}.execute-api.us-east-1.amazonaws.com/dev/todos' \
---header 'Authorization: Bearer {JWT-token}' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "name": "Buy bread",
-    "dueDate": "2022-12-12"
+## 🧪 Sample cURL Commands
+
+### Get Todos
+```bash
+curl -X GET \
+"https://<api-id>.execute-api.us-east-1.amazonaws.com/dev/todos" \
+-H "Authorization: Bearer $TOKEN"
+```
+
+### Create Todo
+```bash
+curl -X POST \
+"https://<api-id>.execute-api.us-east-1.amazonaws.com/dev/todos" \
+-H "Authorization: Bearer $TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+  "name": "My first todo",
+  "dueDate": "2025-12-31"
 }'
 ```
 
-## Update a TODO
+---
 
-To update a TODO you would need to send a PATCH request and provide one of the following fields: `name`, `dueDate`, and boolean `done`.
+## 🗄️ DynamoDB Schema
 
-You would also need to provide an ID of an existing TODO in the URL.
+**Primary Key**
+- Partition key: `userId`
+- Sort key: `todoId`
 
-```sh
-curl --location --request PATCH 'https://{API-ID}.execute-api.us-east-1.amazonaws.com/dev/todos/{TODO-ID}' \
---header 'Authorization: Bearer {JWT-token}' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "name": "Buy bread",
-    "dueDate": "2022-12-12",
-    "done": true
-}'
+**Local Secondary Index**
+- Index name: `CreatedAtIndex`
+- Sort key: `createdAt`
+
+---
+
+## 🖼️ S3 Attachments
+
+- Each todo can have an optional image
+- Images are uploaded using **pre-signed URLs**
+- Bucket CORS enabled for PUT/GET
+
+---
+
+## 📊 Monitoring & Debugging
+
+- **CloudWatch Logs** for Lambda execution
+- **AWS X-Ray** enabled for tracing
+- API Gateway default 4XX responses configured
+
+---
+
+## 🚀 Deployment
+
+### Prerequisites
+- Node.js >= 18
+- AWS CLI configured
+- Serverless Framework
+
+```bash
+npm install -g serverless
 ```
 
-## Remove TODO
-
-To remove a TODO you would need to send a `DELETE` request, and provide an ID of an existing TODO, as well as other parameters.
-
-```sh
-curl --location --request DELETE 'https://{API-ID}.execute-api.us-east-1.amazonaws.com/dev/todos/{TODO-ID}' \
---header 'Authorization: Bearer {JWT-token}'
+### Deploy
+```bash
+npm install
+serverless deploy
 ```
 
+---
 
-## Upload image attachment
+## 🧠 Lessons Learned
 
-To upload an image attachment you would first need to send a POST request to the following URL:
+- Implementing custom JWT authorizers
+- Securing serverless APIs
+- Managing per-user data isolation
+- Debugging with CloudWatch
+- Building scalable serverless architectures
 
-```sh
-curl --location --request POST 'https://{API-ID}.execute-api.us-east-1.amazonaws.com/dev/todos/{TODO-ID}/attachment' \
---header 'Authorization: Bearer {JWT-token}'
-```
+---
 
-It should return a response like this that would provide a pre-signed URL:
+## 📌 Author
 
-```json
-{
-    "uploadUrl": "https://serverless-c4-todo-images.s3.us-east-1.amazonaws.com/...&x-id=PutObject"
-}
-```
+**Arpitha V**  
+Udacity Cloud Developer Nanodegree
 
-We can then use curl command to upload an image (`image.jpg` in this example) to S3 using this pre-signed URL:
+---
 
-```sh
-curl -X PUT -T image.jpg -L "https://serverless-c4-todo-images.s3.us-east-1.amazonaws.com/...&x-id=PutObject"
-```
+## ✅ Status
+
+✔ Backend complete  
+✔ Authentication complete  
+✔ CRUD operations verified  
+✔ Ready for Udacity submission 🎓
+
+---
+
+Happy coding! 🎉
 
