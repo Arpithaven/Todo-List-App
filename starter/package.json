@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@middy/http-json-body-parser": "^6.4.5"
+  }
+}
