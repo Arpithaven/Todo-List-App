@@ -1,9 +1,12 @@
-import { parseUserId } from '../auth/utils.mjs'
+import { parseUserId } from "../auth/utils.mjs";
 
 export function getUserId(event) {
-  const authorization = event.headers.Authorization
-  const split = authorization.split(' ')
-  const jwtToken = split[1]
+  const authHeader = event.headers.Authorization || event.headers.authorization;
 
-  return parseUserId(jwtToken)
+  if (!authHeader) {
+    throw new Error("Missing Authorization header");
+  }
+
+  const jwtToken = authHeader.split(" ")[1];
+  return parseUserId(jwtToken);
 }

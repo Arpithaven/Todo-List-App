@@ -3,25 +3,25 @@ service: serverless-todo-app
 plugins:
   - serverless-iam-roles-per-function
 
-frameworkVersion: '3'
+frameworkVersion: "3"
 
 provider:
   name: aws
   runtime: nodejs18.x
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
-  tracing: 
+  tracing:
     lambda: true
     apiGateway: true
   environment:
     TODOS_TABLE: Todos-${self:provider.stage}
     TODOS_CREATED_AT_INDEX: CreatedAtIndex
-    ATTACHMENT_S3_BUCKET: ayushserverless-112233-${self:provider.stage} # You can change 'ayushserverless-112233-' to any unique bucket name prefix
+    ATTACHMENT_S3_BUCKET: ${self:service}-${sls:stage}-${aws:accountId}-attachments
     SIGNED_URL_EXPIRATION: 3000
-    AUTH0_DOMAIN: ENTER_YOUR_AUTH0_DOMAIN_HERE # Replace with your Auth0 domain
+    AUTH0_DOMAIN: dev-el1z0g3sp5re1djd.us.auth0.com # Replace with your Auth0 domain
+    AUTH0_AUDIENCE: https://todos-api.dev
 
 functions:
-
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
 
@@ -36,9 +36,9 @@ functions:
           authorizer: Auth
     iamRoleStatements:
       - Effect: Allow
-        Action: 
+        Action:
           - dynamodb:Query
-        Resource: 
+        Resource:
           - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
           - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.TODOS_CREATED_AT_INDEX}
 
@@ -56,7 +56,7 @@ functions:
               application/json: ${file(models/create-todo-request.json)}
     iamRoleStatements:
       - Effect: Allow
-        Action: 
+        Action:
           - dynamodb:PutItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
 
@@ -90,7 +90,7 @@ functions:
           authorizer: Auth
     iamRoleStatements:
       - Effect: Allow
-        Action: 
+        Action:
           - dynamodb:DeleteItem
           - dynamodb:Query
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
@@ -110,7 +110,7 @@ functions:
           - s3:PutObject
         Resource: arn:aws:s3:::${self:provider.environment.ATTACHMENT_S3_BUCKET}/*
       - Effect: Allow
-        Action: 
+        Action:
           - dynamodb:UpdateItem
           - dynamodb:Query
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
@@ -129,7 +129,6 @@ resources:
         RestApiId:
           Ref: ApiGatewayRestApi
 
-
     TodosTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -138,7 +137,7 @@ resources:
             AttributeType: S
           - AttributeName: todoId
             AttributeType: S
-          - AttributeName: createdAt 
+          - AttributeName: createdAt
             AttributeType: S
         KeySchema:
           - AttributeName: userId
@@ -160,7 +159,7 @@ resources:
     AttachmentsBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: ${self:provider.environment.ATTACHMENT_S3_BUCKET}
+        BucketName: ${self:service}-${sls:stage}-${aws:accountId}-attachments
         PublicAccessBlockConfiguration:
           BlockPublicAcls: false
           BlockPublicPolicy: false
@@ -169,13 +168,17 @@ resources:
         CorsConfiguration:
           CorsRules:
             - AllowedOrigins:
-              - '*'
+                - http://localhost:3000
               AllowedMethods:
-              - GET
-              - PUT
-              - POST 
-              - DELETE 
-              - HEAD
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              AllowedHeaders:
+                - "*"
+              ExposedHeaders:
+                - ETag
               MaxAge: 3600
 
     BucketPolicy:
@@ -187,9 +190,7 @@ resources:
           Statement:
             - Sid: PublicReadForGetBucketObjects
               Effect: Allow
-              Principal: '*'
-              Action: 's3:GetObject'
-              Resource: 'arn:aws:s3:::${self:provider.environment.ATTACHMENT_S3_BUCKET}/*'
+              Principal: "*"
+              Action: "s3:GetObject"
+              Resource: "arn:aws:s3:::${self:service}-${sls:stage}-${aws:accountId}-attachments/*"
         Bucket: !Ref AttachmentsBucket
-
-      
