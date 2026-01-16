@@ -11,10 +11,15 @@ const jwksUrl = `${issuer}.well-known/jwks.json`;
 
 export async function handler(event) {
   try {
-    const jwtToken = await verifyToken(event.authorizationToken);
+    logger.info("Authorizer event", { event });
+
+    const authHeader = event.authorizationToken;
+    const jwtToken = await verifyToken(authHeader);
+
+    const userId = jwtToken.sub;
 
     return {
-      principalId: jwtToken.sub,
+      principalId: userId,
       policyDocument: {
         Version: "2012-10-17",
         Statement: [
@@ -25,12 +30,15 @@ export async function handler(event) {
           },
         ],
       },
+      context: {
+        userId, // 👈 THIS is what CRUD lambdas read
+      },
     };
-  } catch (e) {
-    logger.error("User not authorized", { error: e.message });
+  } catch (error) {
+    logger.error("Authorization failed", { error });
 
     return {
-      principalId: "user",
+      principalId: "unauthorized",
       policyDocument: {
         Version: "2012-10-17",
         Statement: [
@@ -47,15 +55,16 @@ export async function handler(event) {
 
 async function verifyToken(authHeader) {
   const token = getToken(authHeader);
-  const jwt = jsonwebtoken.decode(token, { complete: true });
 
-  if (!jwt) {
-    throw new Error("Invalid token");
+  const decodedJwt = jsonwebtoken.decode(token, { complete: true });
+  if (!decodedJwt) {
+    throw new Error("Invalid JWT token");
   }
 
   const response = await Axios.get(jwksUrl);
-  const keys = response.data.keys;
-  const signingKey = keys.find((key) => key.kid === jwt.header.kid);
+  const signingKey = response.data.keys.find(
+    (key) => key.kid === decodedJwt.header.kid
+  );
 
   if (!signingKey) {
     throw new Error("Signing key not found");
@@ -72,11 +81,11 @@ async function verifyToken(authHeader) {
 
 function getToken(authHeader) {
   if (!authHeader) {
-    throw new Error("No authentication header");
+    throw new Error("Missing Authorization header");
   }
 
   if (!authHeader.toLowerCase().startsWith("bearer ")) {
-    throw new Error("Invalid authentication header");
+    throw new Error("Invalid Authorization header");
   }
 
   return authHeader.split(" ")[1];
